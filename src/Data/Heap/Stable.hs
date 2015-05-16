@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
-module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin) where
+module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc) where
 
 import Data.Monoid
 
@@ -36,3 +36,9 @@ splitMin (Heap l ls k v rs r) = Just (l `union` ls, k, v, rs `union` r)
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
   mappend = union
+
+cons :: Ord k => k -> a -> Heap k a -> Heap k a
+cons k v = (singleton k v <>)
+
+snoc :: Ord k => Heap k a -> k -> a -> Heap k a
+snoc xs k v = xs <> singleton k v
