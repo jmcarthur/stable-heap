@@ -4,7 +4,10 @@ synopsis:            Purely functional stable heaps (fair priority queues)
 description:
         This library provides a purely functional implementation of
         stable heaps (fair priority queues). The data structure is a
-        modification of pairing heaps.
+        cousin of the pairing heap, but it maintains a sequential
+        ordering of the keys. Insertion can be to either end of the
+        heap, as though it is a deque, and it can be split on the
+        left-most occurrence of the minimum key.
 license:             MIT
 license-file:        LICENSE
 author:              Jake McArthur
