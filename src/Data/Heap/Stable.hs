@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
-module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc) where
+module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc, foldrWithKey, toList) where
 
 import Data.Monoid
 
@@ -42,3 +42,12 @@ cons k v = (singleton k v <>)
 
 snoc :: Ord k => Heap k a -> k -> a -> Heap k a
 snoc xs k v = xs <> singleton k v
+
+foldrWithKey :: (k -> a -> b -> b) -> b -> Heap k a -> b
+foldrWithKey f = flip go
+  where
+    go Empty z = z
+    go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
+
+toList :: Heap k a -> [(k, a)]
+toList = foldrWithKey (\k v xs -> (k, v) : xs) []
