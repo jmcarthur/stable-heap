@@ -1,5 +1,18 @@
 {-# LANGUAGE DeriveTraversable #-}
-module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc, foldrWithKey, toList, fromList, bimap, mapKeys) where
+module Data.Heap.Stable
+       ( Heap ()
+       , empty
+       , singleton
+       , union
+       , splitMin
+       , cons
+       , snoc
+       , foldrWithKey
+       , toList
+       , fromList
+       , bimap
+       , mapKeys
+       ) where
 
 import Data.Monoid
 
