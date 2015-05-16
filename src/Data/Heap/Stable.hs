@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
-module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc, foldrWithKey, toList) where
+module Data.Heap.Stable (Heap (), empty, singleton, union, splitMin, cons, snoc, foldrWithKey, toList, fromList, bimap, mapKeys) where
 
 import Data.Monoid
 
@@ -51,3 +49,39 @@ foldrWithKey f = flip go
 
 toList :: Heap k a -> [(k, a)]
 toList = foldrWithKey (\k v xs -> (k, v) : xs) []
+
+fromList :: Ord k => [(k, a)] -> Heap k a
+fromList = foldMap (uncurry singleton)
+
+bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
+bimap f g = go
+  where
+    go Empty = Empty
+    go (Heap l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
+
+mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
+mapKeys f = bimap f id
+
+instance (Monoid k, Ord k) => Applicative (Heap k) where
+  pure = singleton mempty
+  Empty <*> _ = Empty
+  _ <*> Empty = Empty
+  fs@(Heap fl fls fk f frs fr) <*> xs
+    =  (fl  <*>         xs)
+    <> (fls <*>         xs)
+    <> (bimap (fk <>) f xs)
+    <> (frs <*>         xs)
+    <> (fr  <*>         xs)
+
+instance (Monoid k, Ord k) => Monad (Heap k) where
+  return = pure
+  Empty >>= _ = Empty
+  Heap xl xls xk x xrs xr >>= f
+    =  (xl  >>= f)
+    <> (xls >>= f)
+    <> (mapKeys (xk <>) (f x))
+    <> (xrs >>= f)
+    <> (xr  >>= f)
+
+instance (Show k, Show a) => Show (Heap k a) where
+  showsPrec d h = showParen (d > 10) $ showString "fromList " . shows (toList h)
