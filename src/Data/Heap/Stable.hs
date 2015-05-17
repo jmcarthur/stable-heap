@@ -147,3 +147,9 @@ instance Ord k => GHC.Exts.IsList (Heap k a) where
   type Item (Heap k a) = (k, a)
   fromList = fromList
   toList   = toList
+
+instance (Eq k, Eq a) => Eq (Heap k a) where
+  xs == ys = toList xs == toList ys
+
+instance (Ord k, Ord a) => Ord (Heap k a) where
+  compare xs ys = compare (toList xs) (toList ys)
