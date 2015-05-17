@@ -123,7 +123,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
   _ <*> Empty = Empty
-  fs@(Heap fl fls fk f frs fr) <*> xs
+  (Heap fl fls fk f frs fr) <*> xs
     =  (fl  <*>         xs)
     <> (fls <*>         xs)
     <> (bimap (fk <>) f xs)
