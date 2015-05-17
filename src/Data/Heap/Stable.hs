@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveTraversable #-}
 
 -- | This module provides an implementation of stable heaps, also known
@@ -21,6 +22,7 @@ module Data.Heap.Stable
        ) where
 
 import Data.Monoid
+import qualified GHC.Exts
 
 -- | Semantically, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
@@ -140,3 +142,8 @@ instance (Monoid k, Ord k) => Monad (Heap k) where
 
 instance (Show k, Show a) => Show (Heap k a) where
   showsPrec d h = showParen (d > 10) $ showString "fromList " . shows (toList h)
+
+instance Ord k => GHC.Exts.IsList (Heap k a) where
+  type Item (Heap k a) = (k, a)
+  fromList = fromList
+  toList   = toList
