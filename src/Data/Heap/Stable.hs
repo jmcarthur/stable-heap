@@ -1,7 +1,16 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE TypeFamilies #-}
 
--- | This module provides an implementation of stable heaps, also known
+-- |
+-- Module      :  Data.Heap.Stable
+-- Copyright   :  (C) Jake McArthur 2015
+-- License     :  MIT
+-- Maintainer  :  Jake.McArthur@gmail.com
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- This module provides an implementation of stable heaps, also known
 -- as fair priority queues. Unless stated otherwise, the asymptotic
 -- efficiencies of functions on 'Heap' assume that arguments are
 -- already evaluated to WHNF and that the result will be evaluated to
@@ -24,7 +33,10 @@ module Data.Heap.Stable
 import qualified Control.Applicative as Applicative
 import Control.Monad
 import Data.Monoid
+
+#if __GLASGOW_HASKELL__ >= 708
 import qualified GHC.Exts
+#endif
 
 -- | Semantically, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
@@ -151,10 +163,12 @@ instance (Ord k, Read k, Read a) => Read (Heap k a) where
     (xs, t) <- reads s
     return (fromList xs, t)
 
+#if __GLASGOW_HASKELL__ >= 708
 instance Ord k => GHC.Exts.IsList (Heap k a) where
   type Item (Heap k a) = (k, a)
   fromList = fromList
   toList   = toList
+#endif
 
 instance (Eq k, Eq a) => Eq (Heap k a) where
   xs == ys = toList xs == toList ys
