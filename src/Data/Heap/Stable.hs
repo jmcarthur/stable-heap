@@ -21,6 +21,8 @@ module Data.Heap.Stable
        , mapKeys
        ) where
 
+import qualified Control.Applicative as Applicative
+import Control.Monad
 import Data.Monoid
 import qualified GHC.Exts
 
@@ -159,3 +161,11 @@ instance (Eq k, Eq a) => Eq (Heap k a) where
 
 instance (Ord k, Ord a) => Ord (Heap k a) where
   compare xs ys = compare (toList xs) (toList ys)
+
+instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
+  empty = mempty
+  (<|>) = mappend
+
+instance (Monoid k, Ord k) => MonadPlus (Heap k) where
+  mzero = mempty
+  mplus = mappend
