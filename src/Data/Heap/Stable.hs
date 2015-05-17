@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      :  Data.Heap.Stable
