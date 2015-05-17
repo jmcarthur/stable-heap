@@ -19,7 +19,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.Heap.Stable
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       base >= 4.8,
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-extensions:    DeriveTraversable, Trustworthy, TypeFamilies
@@ -27,7 +27,7 @@ library
 benchmark bench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      bench
-  build-depends:       base >=4.8 && <4.9,
+  build-depends:       base >= 4.8,
                        criterion >= 1.1,
                        fingertree >= 0.1,
                        heaps >= 0.3,
