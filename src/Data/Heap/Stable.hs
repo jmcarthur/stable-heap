@@ -35,6 +35,7 @@ module Data.Heap.Stable
 
 import qualified Control.Applicative as Applicative
 import Control.Monad
+import Data.List (foldl')
 import Data.Monoid
 
 #if __GLASGOW_HASKELL__ >= 708
@@ -123,7 +124,7 @@ toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 --
 -- /O(n)/.
 fromList :: Ord k => [(k, a)] -> Heap k a
-fromList = foldMap (uncurry singleton)
+fromList = foldl' (\acc (k, v) -> snoc acc k v) empty
 
 -- | > toList (bimap f g xs) = map (f *** g) (toList xs)
 bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
