@@ -9,13 +9,15 @@
 -- License     :  MIT
 -- Maintainer  :  Jake.McArthur@gmail.com
 -- Stability   :  experimental
--- Portability :  portable
 --
--- This module provides an implementation of stable heaps, also known
--- as fair priority queues. Unless stated otherwise, the documented
--- asymptotic efficiencies of functions on 'Heap' assume that
--- arguments are already evaluated to WHNF and that the result will be
--- evaluated to WHNF.
+-- This module provides an implementation of stable heaps, or fair
+-- priority queues. The data structure is original, but closely
+-- related to pairing heaps, in particular the lazy pairing heaps
+-- described in /Purely Functional Data Structures/, by Chris Okasaki.
+--
+-- Unless stated otherwise, the documented asymptotic efficiencies of
+-- functions on 'Heap' assume that arguments are already in WHNF and
+-- that the result is to be evaluated to WHNF.
 module Data.Heap.Stable
        ( Heap ()
        , empty
