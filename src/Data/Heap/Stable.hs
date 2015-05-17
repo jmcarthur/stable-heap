@@ -23,7 +23,7 @@ module Data.Heap.Stable
        , empty
        , singleton
        , union
-       , minSplit
+       , minViewWithKey
        , cons
        , snoc
        , foldrWithKey
@@ -84,12 +84,12 @@ xs@(Heap l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap l2 ls2 k2 v2 rs2 r2)
 -- /O(log n)/.
 --
 -- > toList xs =
--- > case minSplit xs of
+-- > case minViewWithKey xs of
 -- >   Nothing -> []
 -- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
-minSplit :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
-minSplit Empty = Nothing
-minSplit (Heap l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
+minViewWithKey :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
+minViewWithKey Empty = Nothing
+minViewWithKey (Heap l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
 
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
