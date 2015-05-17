@@ -18,7 +18,8 @@ createGroup xs name toListAsc snoc empty =
 
 main :: IO ()
 main = do
-  xs <- withSystemRandom $ asGenST (`uniformVector` 1000) :: IO (Vector Int)
+  gen <- create
+  xs <- asGenIO (`uniformVector` 1000) gen :: IO (Vector Int)
   let create = createGroup (Vector.zip xs (Vector.replicate 1000 ()))
   defaultMain
     [ bgroup "unstable"
