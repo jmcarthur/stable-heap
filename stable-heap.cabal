@@ -4,7 +4,7 @@ synopsis:            Purely functional stable heaps (fair priority queues)
 description:
         This library provides a purely functional implementation of
         stable heaps (fair priority queues). The data structure is a
-        cousin of the pairing heap, but it maintains a sequential
+        cousin of the pairing heap which maintains a sequential
         ordering of the keys. Insertion can be to either end of the
         heap, as though it is a deque, and it can be split on the
         left-most occurrence of the minimum key.
@@ -22,7 +22,7 @@ library
   build-depends:       base >=4.8 && <4.9
   hs-source-dirs:      src
   default-language:    Haskell2010
-  other-extensions:    CPP, DeriveTraversable, TypeFamilies
+  other-extensions:    DeriveTraversable, Trustworthy, TypeFamilies
 
 benchmark bench
   type:                exitcode-stdio-1.0

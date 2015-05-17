@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
@@ -12,8 +11,8 @@
 --
 -- This module provides an implementation of stable heaps, or fair
 -- priority queues. The data structure is a fairly simple tweak to add
--- stability to the lazy pairing heaps described in /Purely Functional
--- Data Structures/, by Chris Okasaki.
+-- stability to the lazy pairing heaps described in
+-- /Purely Functional Data Structures/, by Chris Okasaki.
 --
 -- Unless stated otherwise, the documented asymptotic efficiencies of
 -- functions on 'Heap' assume that arguments are already in WHNF and
@@ -39,9 +38,7 @@ import Control.Monad
 import Data.List (foldl', unfoldr)
 import Data.Monoid
 
-#if __GLASGOW_HASKELL__ >= 708
 import qualified GHC.Exts
-#endif
 
 -- | Semantically, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
@@ -92,6 +89,9 @@ minViewWithKey :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
 minViewWithKey Empty = Nothing
 minViewWithKey (Heap l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
 
+-- |
+-- > mempty  = empty
+-- > mappend = union
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
   mappend = union
@@ -115,7 +115,7 @@ foldrWithKey f = flip go
     go Empty z = z
     go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
--- | List the key-value pairs in a 'Heap' in insertion order. The semantic
+-- | List the key-value pairs in a 'Heap' in occurrence order. This is the semantic
 -- function for 'Heap'.
 --
 -- /O(n)/ when the spine of the result is evaluated fully.
@@ -150,6 +150,7 @@ bimap f g = go
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
+-- | Same semantics as @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
@@ -161,6 +162,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
     <> (frs <*>         xs)
     <> (fr  <*>         xs)
 
+-- | Same semantics as @WriterT k []@
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
   Empty >>= _ = Empty
@@ -180,23 +182,29 @@ instance (Ord k, Read k, Read a) => Read (Heap k a) where
     (xs, t) <- reads s
     return (fromList xs, t)
 
-#if __GLASGOW_HASKELL__ >= 708
 instance Ord k => GHC.Exts.IsList (Heap k a) where
   type Item (Heap k a) = (k, a)
   fromList = fromList
   toList   = toList
-#endif
 
+-- | > xs == ys = toList xs == toList ys
 instance (Eq k, Eq a) => Eq (Heap k a) where
   xs == ys = toList xs == toList ys
 
+-- | > compare xs ys = compare (toList xs) (toList ys)
 instance (Ord k, Ord a) => Ord (Heap k a) where
   compare xs ys = compare (toList xs) (toList ys)
 
+-- |
+-- > empty = empty
+-- > (<|>) = union
 instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
   empty = mempty
   (<|>) = mappend
 
+-- |
+-- > mzero = empty
+-- > mplus = union
 instance (Monoid k, Ord k) => MonadPlus (Heap k) where
   mzero = mempty
   mplus = mappend
