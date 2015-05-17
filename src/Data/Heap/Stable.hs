@@ -28,6 +28,7 @@ module Data.Heap.Stable
        , snoc
        , foldrWithKey
        , toList
+       , toListAsc
        , fromList
        , bimap
        , mapKeys
@@ -35,7 +36,7 @@ module Data.Heap.Stable
 
 import qualified Control.Applicative as Applicative
 import Control.Monad
-import Data.List (foldl')
+import Data.List (foldl', unfoldr)
 import Data.Monoid
 
 #if __GLASGOW_HASKELL__ >= 708
@@ -114,12 +115,23 @@ foldrWithKey f = flip go
     go Empty z = z
     go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
--- | List the key-value pairs in a 'Heap', in insertion order. The semantic
+-- | List the key-value pairs in a 'Heap' in insertion order. The semantic
 -- function for 'Heap'.
 --
--- /O(n)/.
+-- /O(n)/ when the spine of the result is evaluated fully.
 toList :: Heap k a -> [(k, a)]
 toList = foldrWithKey (\k v xs -> (k, v) : xs) []
+
+-- | List the key-value pairs in a 'Heap' in key order.
+--
+-- /O(n log n)/ when the spine of the result is evaluated fully.
+toListAsc :: Ord k => Heap k a -> [(k, a)]
+toListAsc = unfoldr f
+  where
+    f xs =
+      case minViewWithKey xs of
+        Nothing -> Nothing
+        Just (l, kv, r) -> Just (kv, l <> r)
 
 -- | Construct a 'Heap' from a list of key-value pairs.
 --
