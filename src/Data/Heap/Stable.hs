@@ -11,9 +11,9 @@
 -- Stability   :  experimental
 --
 -- This module provides an implementation of stable heaps, or fair
--- priority queues. The data structure is technically original, but is
--- really a fairly small tweak to the lazy pairing heaps described in
--- /Purely Functional Data Structures/, by Chris Okasaki.
+-- priority queues. The data structure is a fairly simple tweak to add
+-- stability to the lazy pairing heaps described in /Purely Functional
+-- Data Structures/, by Chris Okasaki.
 --
 -- Unless stated otherwise, the documented asymptotic efficiencies of
 -- functions on 'Heap' assume that arguments are already in WHNF and
