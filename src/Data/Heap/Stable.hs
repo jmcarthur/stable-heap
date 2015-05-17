@@ -23,7 +23,7 @@ module Data.Heap.Stable
        , empty
        , singleton
        , union
-       , splitMin
+       , minSplit
        , cons
        , snoc
        , foldrWithKey
@@ -80,15 +80,16 @@ xs@(Heap l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap l2 ls2 k2 v2 rs2 r2)
 --
 -- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty,
 -- finding the key and value is /O(1)/, and evaluating the remainder
--- of the heap to the left or right of the key-value pair is /O(log n)/.
+-- of the heap to the left or right of the key-value pair is amortized
+-- /O(log n)/.
 --
 -- > toList xs =
--- > case splitMin xs of
+-- > case minSplit xs of
 -- >   Nothing -> []
--- >   Just (l, k, v, r) -> toList l ++ [(k, v)] ++ toList r
-splitMin :: Ord k => Heap k a -> Maybe (Heap k a, k, a, Heap k a)
-splitMin Empty = Nothing
-splitMin (Heap l ls k v rs r) = Just (l `union` ls, k, v, rs `union` r)
+-- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
+minSplit :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
+minSplit Empty = Nothing
+minSplit (Heap l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
 
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
@@ -113,7 +114,7 @@ foldrWithKey f = flip go
     go Empty z = z
     go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
--- | List the key-value pairs in a 'Heap', in order. The semantic
+-- | List the key-value pairs in a 'Heap', in insertion order. The semantic
 -- function for 'Heap'.
 --
 -- /O(n)/.
