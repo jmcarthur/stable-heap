@@ -75,7 +75,7 @@ xs@(Heap l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap l2 ls2 k2 v2 rs2 r2)
         Empty            -> Heap         xs                     ls2  k2 v2 rs2 r2
         Heap _ _ _ _ _ _ -> Heap Empty ((xs `union` l2) `union` ls2) k2 v2 rs2 r2
 
--- | Split the 'Heap' at the first occurrence of the smallest key
+-- | Split the 'Heap' at the leftmost occurrence of the smallest key
 -- contained in the 'Heap'.
 --
 -- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty,
