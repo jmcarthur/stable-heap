@@ -143,6 +143,12 @@ instance (Monoid k, Ord k) => Monad (Heap k) where
 instance (Show k, Show a) => Show (Heap k a) where
   showsPrec d h = showParen (d > 10) $ showString "fromList " . shows (toList h)
 
+instance (Ord k, Read k, Read a) => Read (Heap k a) where
+  readsPrec p = readParen (p > 10) $ \ r -> do
+    ("fromList", s) <- lex r
+    (xs, t) <- reads s
+    return (fromList xs, t)
+
 instance Ord k => GHC.Exts.IsList (Heap k a) where
   type Item (Heap k a) = (k, a)
   fromList = fromList
