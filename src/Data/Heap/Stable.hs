@@ -12,10 +12,10 @@
 -- Portability :  portable
 --
 -- This module provides an implementation of stable heaps, also known
--- as fair priority queues. Unless stated otherwise, the asymptotic
--- efficiencies of functions on 'Heap' assume that arguments are
--- already evaluated to WHNF and that the result will be evaluated to
--- WHNF.
+-- as fair priority queues. Unless stated otherwise, the documented
+-- asymptotic efficiencies of functions on 'Heap' assume that
+-- arguments are already evaluated to WHNF and that the result will be
+-- evaluated to WHNF.
 module Data.Heap.Stable
        ( Heap ()
        , empty
