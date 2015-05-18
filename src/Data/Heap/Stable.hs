@@ -138,7 +138,7 @@ foldrWithKey f = flip go
     go Empty z = z
     go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
--- | List the key-value pairs in a 'Heap' in occurrence order. This is the semantic
+-- | List the key-value pairs in a 'Heap' in sequence order. This is the semantic
 -- function for 'Heap'.
 --
 -- /O(n)/ when the spine of the result is evaluated fully.
