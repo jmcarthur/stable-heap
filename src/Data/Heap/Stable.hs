@@ -13,6 +13,11 @@
 -- priority queues. The data structure is a fairly simple tweak to the
 -- lazy pairing heaps described in Chris Okasaki's /Purely Functional Data Structures/.
 --
+-- Due to its stability, a 'Heap' has both heap-like and sequence-like
+-- properties. Most of the traversals defined in this module work in
+-- sequence order; those that work in key order are explicitly
+-- documented as such.
+--
 -- Unless stated otherwise, the documented asymptotic efficiencies of
 -- functions on 'Heap' assume that arguments are already in WHNF and
 -- that the result is to be evaluated to WHNF.
@@ -22,6 +27,7 @@ module Data.Heap.Stable
        , empty
        , singleton
        , union
+       , unions
        , cons
        , snoc
          -- * Minimum view
@@ -36,8 +42,8 @@ module Data.Heap.Stable
          -- ** Conversion from lists
        , fromList
          -- ** Conversion to lists
-       , toAscList
        , toList
+       , toAscList
        ) where
 
 import qualified Control.Applicative as Applicative
@@ -80,6 +86,12 @@ xs@(Heap l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap l2 ls2 k2 v2 rs2 r2)
         Empty            -> Heap         xs                     ls2  k2 v2 rs2 r2
         Heap _ _ _ _ _ _ -> Heap Empty ((xs `union` l2) `union` ls2) k2 v2 rs2 r2
 
+-- | /O(m)/, where /m/ is the length of the input list.
+--
+-- > toList (unions xss) = concatMap toList xss
+unions :: Ord k => [Heap k a] -> Heap k a
+unions = foldl' union empty
+
 -- | Split the 'Heap' at the leftmost occurrence of the smallest key
 -- contained in the 'Heap'.
 --
@@ -103,13 +115,17 @@ instance Ord k => Monoid (Heap k a) where
   mempty = empty
   mappend = union
 
--- | /O(1)/.
+-- | Prepend a key-value pair to the beginning of a 'Heap'.
+--
+-- /O(1)/.
 --
 -- > toList (cons k v xs) = (k, v) : toList xs
 cons :: Ord k => k -> a -> Heap k a -> Heap k a
 cons k v = (singleton k v <>)
 
--- | /O(1)/.
+-- | Append a key-value pair to the end of a 'Heap'.
+--
+-- /O(1)/.
 --
 -- > toList (snoc xs k v) = toList xs ++ [(k, v)]
 snoc :: Ord k => Heap k a -> k -> a -> Heap k a
@@ -157,7 +173,7 @@ bimap f g = go
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
--- | Same semantics as @WriterT k []@
+-- | Works like @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
@@ -169,7 +185,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
     <> (frs <*>         xs)
     <> (fr  <*>         xs)
 
--- | Same semantics as @WriterT k []@
+-- | Works like @WriterT k []@
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
   Empty >>= _ = Empty
