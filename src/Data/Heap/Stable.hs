@@ -19,18 +19,26 @@
 -- that the result is to be evaluated to WHNF.
 module Data.Heap.Stable
        ( Heap ()
+         -- * Construction
        , empty
        , singleton
        , union
-       , minViewWithKey
        , cons
        , snoc
-       , foldrWithKey
-       , toList
-       , toListAsc
-       , fromList
+         -- * Minimum view
+       , minViewWithKey
+         -- * Traversal
+         -- ** Map
        , bimap
        , mapKeys
+         -- ** Fold
+       , foldrWithKey
+         -- * List operations
+         -- ** Conversion from lists
+       , fromList
+         -- ** Conversion to lists
+       , toAscList
+       , toList
        ) where
 
 import qualified Control.Applicative as Applicative
@@ -125,8 +133,8 @@ toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 -- | List the key-value pairs in a 'Heap' in key order.
 --
 -- /O(n log n)/ when the spine of the result is evaluated fully.
-toListAsc :: Ord k => Heap k a -> [(k, a)]
-toListAsc = unfoldr f
+toAscList :: Ord k => Heap k a -> [(k, a)]
+toAscList = unfoldr f
   where
     f xs =
       case minViewWithKey xs of
