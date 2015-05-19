@@ -9,14 +9,17 @@
 -- Maintainer  :  Jake.McArthur@gmail.com
 -- Stability   :  experimental
 --
--- This module provides an implementation of stable heaps, or fair
--- priority queues. The data structure is a fairly simple tweak to the
--- lazy pairing heaps described in Chris Okasaki's /Purely Functional Data Structures/.
+-- A simple implementation of stable heaps (fair priority queues),
+-- modeled as a sequence of key-value pairs, allowing duplicates, with
+-- efficient access to the leftmost key-value pair having the smallest
+-- key.
 --
--- Due to its stability, a 'Heap' has both heap-like and sequence-like
--- properties. Most of the traversals defined in this module work in
--- sequence order; those that work in key order are explicitly
--- documented as such.
+-- The data structure is a modification of the lazy pairing heaps
+-- described in Chris Okasaki's /Purely Functional Data Structures/.
+--
+-- A 'Heap' has both heap-like and sequence-like properties. Most of
+-- the traversals defined in this module work in sequence order; those
+-- that work in key order are explicitly documented as such.
 --
 -- Unless stated otherwise, the documented asymptotic efficiencies of
 -- functions on 'Heap' assume that arguments are already in WHNF and
@@ -53,7 +56,7 @@ import Data.Monoid
 
 import qualified GHC.Exts
 
--- | Semantically, @Heap k a@ is equivalent to @[(k, a)]@, but its
+-- | Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
 data Heap k a
   = Heap !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
