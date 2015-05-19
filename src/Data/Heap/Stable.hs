@@ -26,6 +26,9 @@
 -- that the result is to be evaluated to WHNF.
 module Data.Heap.Stable
        ( Heap ()
+         -- * Query
+       , Data.Heap.Stable.null
+       , size
          -- * Construction
        , empty
        , singleton
@@ -59,9 +62,27 @@ import qualified GHC.Exts
 -- | Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
 data Heap k a
-  = Heap !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
+  = Heap !Int !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
   | Empty
   deriving (Functor, Foldable, Traversable)
+
+-- | 'True' if the 'Heap' is empty.
+--
+-- /O(1)/.
+--
+-- > null xs = Data.List.null (toList xs)
+null :: Heap k a -> Bool
+null Empty = True
+null (Heap _ _ _ _ _ _ _) = False
+
+-- | The number of key-value pairs in the heap.
+--
+-- /O(1)/.
+--
+-- > size xs = length (toList xs)
+size :: Heap k a -> Int
+size Empty = 0
+size (Heap s _ _ _ _ _ _) = s
 
 -- | @toList empty = []@
 empty :: Heap k a
@@ -71,7 +92,7 @@ empty = Empty
 --
 -- > toList (singleton k v) = [(k, v)]
 singleton :: k -> a -> Heap k a
-singleton k v = Heap empty empty k v empty empty
+singleton k v = Heap 1 empty empty k v empty empty
 
 -- | /O(1)/.
 --
@@ -79,15 +100,15 @@ singleton k v = Heap empty empty k v empty empty
 union :: Ord k => Heap k a -> Heap k a -> Heap k a
 Empty `union` ys = ys
 xs `union` Empty = xs
-xs@(Heap l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap l2 ls2 k2 v2 rs2 r2)
+xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
   | k1 <= k2 =
       case r1 of
-        Empty            -> Heap l1 ls1 k1 v1  rs1                     ys
-        Heap _ _ _ _ _ _ -> Heap l1 ls1 k1 v1 (rs1 `union` (r1 `union` ys)) Empty
+        Empty              -> Heap (sx+sy) l1 ls1 k1 v1  rs1                     ys
+        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) l1 ls1 k1 v1 (rs1 `union` (r1 `union` ys)) Empty
   | otherwise =
       case l2 of
-        Empty            -> Heap         xs                     ls2  k2 v2 rs2 r2
-        Heap _ _ _ _ _ _ -> Heap Empty ((xs `union` l2) `union` ls2) k2 v2 rs2 r2
+        Empty              -> Heap (sx+sy)        xs                     ls2  k2 v2 rs2 r2
+        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) Empty ((xs `union` l2) `union` ls2) k2 v2 rs2 r2
 
 -- | /O(m)/, where /m/ is the length of the input list.
 --
@@ -109,7 +130,7 @@ unions = foldl' union empty
 -- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
 minViewWithKey :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
 minViewWithKey Empty = Nothing
-minViewWithKey (Heap l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
+minViewWithKey (Heap _ l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
 
 -- |
 -- > mempty  = empty
@@ -139,7 +160,7 @@ foldrWithKey :: (k -> a -> b -> b) -> b -> Heap k a -> b
 foldrWithKey f = flip go
   where
     go Empty z = z
-    go (Heap l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
+    go (Heap _ l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
 -- | List the key-value pairs in a 'Heap' in sequence order. This is the semantic
 -- function for 'Heap'.
@@ -170,7 +191,7 @@ bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
 bimap f g = go
   where
     go Empty = Empty
-    go (Heap l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
+    go (Heap _ l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
 
 -- | > toList (mapKeys f xs) = map (first f) (toList xs)
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
@@ -181,7 +202,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
   _ <*> Empty = Empty
-  (Heap fl fls fk f frs fr) <*> xs
+  (Heap _ fl fls fk f frs fr) <*> xs
     =  (fl  <*>         xs)
     <> (fls <*>         xs)
     <> (bimap (fk <>) f xs)
@@ -192,7 +213,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
   Empty >>= _ = Empty
-  Heap xl xls xk x xrs xr >>= f
+  Heap _ xl xls xk x xrs xr >>= f
     =  (xl  >>= f)
     <> (xls >>= f)
     <> (mapKeys (xk <>) (f x))
