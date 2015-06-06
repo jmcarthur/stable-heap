@@ -59,14 +59,16 @@ import Data.Monoid
 
 import qualified GHC.Exts
 
--- | Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its
+-- |
+-- Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its
 -- operations have different efficiencies.
 data Heap k a
   = Heap !Int !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
   | Empty
   deriving (Functor, Foldable, Traversable)
 
--- | 'True' if the 'Heap' is empty.
+-- |
+-- 'True' if the 'Heap' is empty.
 --
 -- /O(1)/.
 --
@@ -75,7 +77,8 @@ null :: Heap k a -> Bool
 null Empty = True
 null (Heap _ _ _ _ _ _ _) = False
 
--- | The number of key-value pairs in the heap.
+-- |
+-- The number of key-value pairs in the heap.
 --
 -- /O(1)/.
 --
@@ -84,17 +87,20 @@ size :: Heap k a -> Int
 size Empty = 0
 size (Heap s _ _ _ _ _ _) = s
 
--- | @toList empty = []@
+-- |
+-- @toList empty = []@
 empty :: Heap k a
 empty = Empty
 
--- | /O(1)/.
+-- |
+-- /O(1)/.
 --
 -- > toList (singleton k v) = [(k, v)]
 singleton :: k -> a -> Heap k a
 singleton k v = Heap 1 empty empty k v empty empty
 
--- | /O(1)/.
+-- |
+-- /O(1)/.
 --
 -- > toList (xs `union` ys) = toList xs ++ toList ys
 union :: Ord k => Heap k a -> Heap k a -> Heap k a
@@ -116,7 +122,8 @@ xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
 unions :: Ord k => [Heap k a] -> Heap k a
 unions = foldl' union empty
 
--- | Split the 'Heap' at the leftmost occurrence of the smallest key
+-- |
+-- Split the 'Heap' at the leftmost occurrence of the smallest key
 -- contained in the 'Heap'.
 --
 -- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty,
@@ -139,7 +146,8 @@ instance Ord k => Monoid (Heap k a) where
   mempty = empty
   mappend = union
 
--- | Prepend a key-value pair to the beginning of a 'Heap'.
+-- |
+-- Prepend a key-value pair to the beginning of a 'Heap'.
 --
 -- /O(1)/.
 --
@@ -147,7 +155,8 @@ instance Ord k => Monoid (Heap k a) where
 cons :: Ord k => k -> a -> Heap k a -> Heap k a
 cons k v = (singleton k v <>)
 
--- | Append a key-value pair to the end of a 'Heap'.
+-- |
+-- Append a key-value pair to the end of a 'Heap'.
 --
 -- /O(1)/.
 --
@@ -155,21 +164,24 @@ cons k v = (singleton k v <>)
 snoc :: Ord k => Heap k a -> k -> a -> Heap k a
 snoc xs k v = xs <> singleton k v
 
--- | > foldrWithKey f z xs = foldr (uncurry f) z (toList xs)
+-- |
+-- > foldrWithKey f z xs = foldr (uncurry f) z (toList xs)
 foldrWithKey :: (k -> a -> b -> b) -> b -> Heap k a -> b
 foldrWithKey f = flip go
   where
     go Empty z = z
     go (Heap _ l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
--- | List the key-value pairs in a 'Heap' in sequence order. This is the semantic
+-- |
+-- List the key-value pairs in a 'Heap' in sequence order. This is the semantic
 -- function for 'Heap'.
 --
 -- /O(n)/ when the spine of the result is evaluated fully.
 toList :: Heap k a -> [(k, a)]
 toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 
--- | List the key-value pairs in a 'Heap' in key order.
+-- |
+-- List the key-value pairs in a 'Heap' in key order.
 --
 -- /O(n log n)/ when the spine of the result is evaluated fully.
 toAscList :: Ord k => Heap k a -> [(k, a)]
@@ -180,24 +192,28 @@ toAscList = unfoldr f
         Nothing -> Nothing
         Just (l, kv, r) -> Just (kv, l <> r)
 
--- | Construct a 'Heap' from a list of key-value pairs.
+-- |
+-- Construct a 'Heap' from a list of key-value pairs.
 --
 -- /O(n)/.
 fromList :: Ord k => [(k, a)] -> Heap k a
 fromList = foldl' (\acc (k, v) -> snoc acc k v) empty
 
--- | > toList (bimap f g xs) = map (f *** g) (toList xs)
+-- |
+-- > toList (bimap f g xs) = map (f *** g) (toList xs)
 bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
 bimap f g = go
   where
     go Empty = Empty
     go (Heap _ l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
 
--- | > toList (mapKeys f xs) = map (first f) (toList xs)
+-- |
+-- > toList (mapKeys f xs) = map (first f) (toList xs)
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
--- | Works like @WriterT k []@
+-- |
+-- Works like @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
@@ -209,7 +225,8 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
     <> (frs <*>         xs)
     <> (fr  <*>         xs)
 
--- | Works like @WriterT k []@
+-- |
+-- Works like @WriterT k []@
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
   Empty >>= _ = Empty
@@ -234,11 +251,13 @@ instance Ord k => GHC.Exts.IsList (Heap k a) where
   fromList = fromList
   toList   = toList
 
--- | > xs == ys = toList xs == toList ys
+-- |
+-- > xs == ys = toList xs == toList ys
 instance (Eq k, Eq a) => Eq (Heap k a) where
   xs == ys = toList xs == toList ys
 
--- | > compare xs ys = compare (toList xs) (toList ys)
+-- |
+-- > compare xs ys = compare (toList xs) (toList ys)
 instance (Ord k, Ord a) => Ord (Heap k a) where
   compare xs ys = compare (toList xs) (toList ys)
 
