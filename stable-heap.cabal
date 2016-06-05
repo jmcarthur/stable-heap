@@ -29,6 +29,20 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-extensions:    DeriveTraversable, Trustworthy, TypeFamilies
+  ghc-options:         -O2
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  build-depends:       base,
+                       QuickCheck,
+                       stable-heap,
+                       tasty,
+                       tasty-quickcheck,
+                       transformers
+  main-is:             Test.hs
+  default-language:    Haskell2010
+  ghc-options:         -O2
 
 benchmark bench
   type:                exitcode-stdio-1.0
@@ -43,6 +57,7 @@ benchmark bench
                        vector >= 0.10
   main-is:             Bench.hs
   default-language:    Haskell2010
+  ghc-options:         -O2
 
 source-repository head
   type:     darcs
