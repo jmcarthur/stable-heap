@@ -46,7 +46,8 @@
 \.installed-pkg-config
 \.setup-config
 # standard cabal build dir, might not be boring for everybody
-# ^dist(/|$)
+^dist(/|$)
+^\.stack-work(/|$)
 # autotools
 (^|/)autom4te\.cache($|/)
 (^|/)config\.(log|status)$
