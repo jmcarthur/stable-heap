@@ -32,8 +32,8 @@ module Data.Heap.Stable
          -- * Construction
        , empty
        , singleton
-       , union
-       , unions
+       , append
+       , appends
        , cons
        , snoc
          -- * Minimum view
@@ -53,6 +53,7 @@ module Data.Heap.Stable
        ) where
 
 import qualified Control.Applicative as Applicative
+import Control.Applicative hiding (Alternative (..))
 import Control.Monad
 import Data.List (foldl', unfoldr)
 import Data.Monoid
@@ -102,25 +103,25 @@ singleton k v = Heap 1 empty empty k v empty empty
 -- |
 -- /O(1)/.
 --
--- > toList (xs `union` ys) = toList xs ++ toList ys
-union :: Ord k => Heap k a -> Heap k a -> Heap k a
-Empty `union` ys = ys
-xs `union` Empty = xs
-xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `union` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
+-- > toList (xs `append` ys) = toList xs ++ toList ys
+append :: Ord k => Heap k a -> Heap k a -> Heap k a
+Empty `append` ys = ys
+xs `append` Empty = xs
+xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `append` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
   | k1 <= k2 =
       case r1 of
         Empty              -> Heap (sx+sy) l1 ls1 k1 v1  rs1                     ys
-        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) l1 ls1 k1 v1 (rs1 `union` (r1 `union` ys)) Empty
+        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) l1 ls1 k1 v1 (rs1 `append` (r1 `append` ys)) Empty
   | otherwise =
       case l2 of
         Empty              -> Heap (sx+sy)        xs                     ls2  k2 v2 rs2 r2
-        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) Empty ((xs `union` l2) `union` ls2) k2 v2 rs2 r2
+        Heap _ _ _ _ _ _ _ -> Heap (sx+sy) Empty ((xs `append` l2) `append` ls2) k2 v2 rs2 r2
 
 -- | /O(m)/, where /m/ is the length of the input list.
 --
--- > toList (unions xss) = concatMap toList xss
-unions :: Ord k => [Heap k a] -> Heap k a
-unions = foldl' union empty
+-- > toList (appends xss) = concatMap toList xss
+appends :: Ord k => [Heap k a] -> Heap k a
+appends = foldl' append empty
 
 -- |
 -- Split the 'Heap' at the leftmost occurrence of the smallest key
@@ -137,14 +138,14 @@ unions = foldl' union empty
 -- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
 minViewWithKey :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
 minViewWithKey Empty = Nothing
-minViewWithKey (Heap _ l ls k v rs r) = Just (l `union` ls, (k, v), rs `union` r)
+minViewWithKey (Heap _ l ls k v rs r) = Just (l `append` ls, (k, v), rs `append` r)
 
 -- |
 -- > mempty  = empty
--- > mappend = union
+-- > mappend = append
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
-  mappend = union
+  mappend = append
 
 -- |
 -- Prepend a key-value pair to the beginning of a 'Heap'.
@@ -212,6 +213,31 @@ bimap f g = go
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
+mapWithKey :: (k -> a -> b) -> Heap k a -> Heap k b
+mapWithKey f = go
+  where
+    go Empty = Empty
+    go (Heap n l ls k v rs r) = Heap n (go l) (go ls) k (f k v) (go rs) (go r)
+
+foldMapWithKey :: Monoid b => (k -> a -> b) -> Heap k a -> b
+foldMapWithKey f = go
+  where
+    go Empty = mempty
+    go (Heap _ l ls k v rs r) = go l <> go ls <> f k v <> go rs <> go r
+
+traverseWithKey :: Applicative f => (k -> a -> f b) -> Heap k a -> f (Heap k b)
+traverseWithKey f = go
+  where
+    go Empty = pure Empty
+    go (Heap n l ls k v rs r) = Heap n <$> go l <*> go ls <*> pure k <*> f k v <*> go rs <*> go r
+
+traverseKeys :: (Applicative f, Ord k2) => (k1 -> f k2) -> Heap k1 a -> f (Heap k2 a)
+traverseKeys f = go
+  where
+    go Empty = pure Empty
+    go (Heap _ l ls k v rs r) = go l <.> go ls <.> ((`singleton` v) <$> f k) <.> go rs <.> go r
+    (<.>) = liftA2 (<>)
+
 -- |
 -- Works like @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
@@ -263,14 +289,14 @@ instance (Ord k, Ord a) => Ord (Heap k a) where
 
 -- |
 -- > empty = empty
--- > (<|>) = union
+-- > (<|>) = append
 instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
   empty = mempty
   (<|>) = mappend
 
 -- |
 -- > mzero = empty
--- > mplus = union
+-- > mplus = append
 instance (Monoid k, Ord k) => MonadPlus (Heap k) where
   mzero = mempty
   mplus = mappend

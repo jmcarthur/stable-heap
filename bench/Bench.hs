@@ -27,7 +27,7 @@ main = do
       , create "heap" (map (Heap.priority &&& Heap.payload) . Foldable.toList) (\h k v -> Heap.insert (Heap.Entry k v) h) Heap.empty
       ]
     , bgroup "stable"
-      [ create "stable-heap" Stable.toListAsc Stable.snoc Stable.empty
+      [ create "stable-heap" Stable.toAscList Stable.snoc Stable.empty
       , create "fingertree" (unfoldr FingerTree.minViewWithKey) (\q k v -> FingerTree.add k v q) FingerTree.empty
       ]
     ]
