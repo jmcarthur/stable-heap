@@ -42,8 +42,12 @@ module Data.Heap.Stable
          -- ** Map
        , bimap
        , mapKeys
+       , mapWithKey
+       , traverseKeys
+       , traverseWithKey
          -- ** Fold
        , foldrWithKey
+       , foldMapWithKey
          -- * List operations
          -- ** Conversion from lists
        , fromList
@@ -213,24 +217,46 @@ bimap f g = go
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
+-- |
+-- Map a function over all values in a heap.
+--
+-- /O(1)/ when evaluating to WHNF. /O(n)/ when evaluating to NF.
 mapWithKey :: (k -> a -> b) -> Heap k a -> Heap k b
 mapWithKey f = go
   where
     go Empty = Empty
     go (Heap n l ls k v rs r) = Heap n (go l) (go ls) k (f k v) (go rs) (go r)
 
+-- |
+-- Fold the keys and values in the heap using the given monoid, such that
+--
+-- > foldMapWithKey f = fold . mapWithKey f
+--
+-- /O(n)/.
 foldMapWithKey :: Monoid b => (k -> a -> b) -> Heap k a -> b
 foldMapWithKey f = go
   where
     go Empty = mempty
     go (Heap _ l ls k v rs r) = go l <> go ls <> f k v <> go rs <> go r
 
+-- |
+-- Behaves exactly like a regular traverse except that the traversing function
+-- also has access to the key associated with a value, such that
+--
+-- > traverseWithKey f = fromList . traverse ((k, v) -> (,) k $ f k v) . toList
+--
+-- /O(n)/.
 traverseWithKey :: Applicative f => (k -> a -> f b) -> Heap k a -> f (Heap k b)
 traverseWithKey f = go
   where
     go Empty = pure Empty
     go (Heap n l ls k v rs r) = Heap n <$> go l <*> go ls <*> pure k <*> f k v <*> go rs <*> go r
 
+-- |
+-- Behaves exactly like a regular traverse except that it's over the keys
+-- instead of the values.
+--
+-- /O(n log n)/.
 traverseKeys :: (Applicative f, Ord k2) => (k1 -> f k2) -> Heap k1 a -> f (Heap k2 a)
 traverseKeys f = go
   where
