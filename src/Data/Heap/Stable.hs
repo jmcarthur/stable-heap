@@ -37,6 +37,7 @@ module Data.Heap.Stable
        , cons
        , snoc
          -- * Minimum view
+       , HeapMinView (..)
        , minViewWithKey
          -- * Traversal
          -- ** Map
@@ -127,6 +128,10 @@ xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `append` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
 appends :: Ord k => [Heap k a] -> Heap k a
 appends = foldl' append empty
 
+data HeapMinView k v
+  = EmptyH
+  | MinViewH (Heap k v) k v (Heap k v)
+
 -- |
 -- Split the 'Heap' at the leftmost occurrence of the smallest key
 -- contained in the 'Heap'.
@@ -140,9 +145,9 @@ appends = foldl' append empty
 -- > case minViewWithKey xs of
 -- >   Nothing -> []
 -- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
-minViewWithKey :: Ord k => Heap k a -> Maybe (Heap k a, (k, a), Heap k a)
-minViewWithKey Empty = Nothing
-minViewWithKey (Heap _ l ls k v rs r) = Just (l `append` ls, (k, v), rs `append` r)
+minViewWithKey :: Ord k => Heap k a -> HeapMinView k a
+minViewWithKey Empty = EmptyH
+minViewWithKey (Heap _ l ls k v rs r) = MinViewH (l `append` ls) k v (rs `append` r)
 
 -- |
 -- > mempty  = empty
@@ -194,8 +199,8 @@ toAscList = unfoldr f
   where
     f xs =
       case minViewWithKey xs of
-        Nothing -> Nothing
-        Just (l, kv, r) -> Just (kv, l <> r)
+        EmptyH -> Nothing
+        MinViewH l k v r -> Just ((k, v), l <> r)
 
 -- |
 -- Construct a 'Heap' from a list of key-value pairs.

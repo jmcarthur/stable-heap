@@ -102,9 +102,9 @@ tests =
       Heap.toList (a >>= f) == fromWriterT (toWriterT a >>= toWriterT . f)
   ]
 
-minViewToSemantics :: Maybe (Heap k a, (k, a), Heap k a) -> Maybe ([(k, a)], (k, a), [(k, a)])
-minViewToSemantics Nothing = Nothing
-minViewToSemantics (Just (l, kv, r)) = Just (Heap.toList l, kv, Heap.toList r)
+minViewToSemantics :: Heap.HeapMinView k a -> Maybe ([(k, a)], (k, a), [(k, a)])
+minViewToSemantics Heap.EmptyH = Nothing
+minViewToSemantics (Heap.MinViewH l k v r) = Just (Heap.toList l, (k, v), Heap.toList r)
 
 minViewWithKeySemantics :: Ord k => [(k, a)] -> Maybe ([(k, a)], (k, a), [(k, a)])
 minViewWithKeySemantics [] = Nothing
