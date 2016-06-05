@@ -15,7 +15,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Jake McArthur
 maintainer:          Jake.McArthur@gmail.com
-copyright:           Copyright (C) 2015 Jake McArthur
+copyright:           Copyright (C) 2015-2016 Jake McArthur
 homepage:            http://hub.darcs.net/jmcarthur/stable-heap
 bug-reports:         http://hub.darcs.net/jmcarthur/stable-heap/issues
 category:            Data Structures

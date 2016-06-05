@@ -4,7 +4,7 @@
 
 -- |
 -- Module      :  Data.Heap.Stable
--- Copyright   :  (C) Jake McArthur 2015
+-- Copyright   :  (C) Jake McArthur 2015-2016
 -- License     :  MIT
 -- Maintainer  :  Jake.McArthur@gmail.com
 -- Stability   :  experimental
