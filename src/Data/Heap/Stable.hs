@@ -119,7 +119,7 @@ xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `append` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
         Heap {} -> Heap (sx+sy) l1 ls1 k1 v1 (rs1 `append` (r1 `append` ys)) Empty
   | otherwise =
       case l2 of
-        Empty   -> Heap (sx+sy)        xs                     ls2  k2 v2 rs2 r2
+        Empty   -> Heap (sx+sy)        xs                        ls2  k2 v2 rs2 r2
         Heap {} -> Heap (sx+sy) Empty ((xs `append` l2) `append` ls2) k2 v2 rs2 r2
 
 -- | /O(m)/, where /m/ is the length of the input list.
