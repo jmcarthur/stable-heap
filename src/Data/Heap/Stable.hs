@@ -10,21 +10,20 @@
 -- Maintainer  :  Jake.McArthur@gmail.com
 -- Stability   :  experimental
 --
--- A simple implementation of stable heaps (fair priority queues),
--- modeled as a sequence of key-value pairs, allowing duplicates, with
--- efficient access to the leftmost key-value pair having the smallest
--- key.
+-- A simple implementation of stable heaps (fair priority queues), modeled as a
+-- sequence of key-value pairs, allowing duplicates, with efficient access to
+-- the leftmost key-value pair having the smallest key.
 --
--- The data structure is a modification of the lazy pairing heaps
--- described in Chris Okasaki's /Purely Functional Data Structures/.
+-- The data structure is a modification of the lazy pairing heaps described in
+-- Chris Okasaki's /Purely Functional Data Structures/.
 --
--- A 'Heap' has both heap-like and sequence-like properties. Most of
--- the traversals defined in this module work in sequence order; those
--- that work in key order are explicitly documented as such.
+-- A 'Heap' has both heap-like and sequence-like properties. Most of the
+-- traversals defined in this module work in sequence order; those that work in
+-- key order are explicitly documented as such.
 --
--- Unless stated otherwise, the documented asymptotic efficiencies of
--- functions on 'Heap' assume that arguments are already in WHNF and
--- that the result is to be evaluated to WHNF.
+-- Unless stated otherwise, the documented asymptotic efficiencies of functions
+-- on 'Heap' assume that arguments are already in WHNF and that the result is to
+-- be evaluated to WHNF.
 module Data.Heap.Stable
        ( Heap ()
          -- * Query
@@ -143,13 +142,12 @@ data HeapMinView k v
 
 -- |
 --
--- Split the 'Heap' at the leftmost occurrence of the smallest key
--- contained in the 'Heap'.
+-- Split the 'Heap' at the leftmost occurrence of the smallest key contained in
+-- the 'Heap'.
 --
--- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty,
--- finding the key and value is /O(1)/, and evaluating the remainder
--- of the heap to the left or right of the key-value pair is amortized
--- /O(log n)/.
+-- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty, finding the
+-- key and value is /O(1)/, and evaluating the remainder of the heap to the left
+-- or right of the key-value pair is amortized /O(log n)/.
 --
 -- > toList xs =
 -- > case minViewWithKey xs of
