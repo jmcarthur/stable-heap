@@ -3,6 +3,7 @@
 {-# LANGUAGE Trustworthy #-}
 
 -- |
+--
 -- Module      :  Data.Heap.Stable
 -- Copyright   :  (C) Jake McArthur 2015-2016
 -- License     :  MIT
@@ -66,14 +67,16 @@ import Data.Monoid
 import qualified GHC.Exts
 
 -- |
--- Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its
--- operations have different efficiencies.
+--
+-- Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its operations
+-- have different efficiencies.
 data Heap k a
   = Heap !Int !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
   | Empty
   deriving (Functor, Foldable, Traversable)
 
 -- |
+--
 -- 'True' if the 'Heap' is empty.
 --
 -- /O(1)/.
@@ -84,6 +87,7 @@ null Empty = True
 null Heap {} = False
 
 -- |
+--
 -- The number of key-value pairs in the heap.
 --
 -- /O(1)/.
@@ -94,11 +98,13 @@ size Empty = 0
 size (Heap s _ _ _ _ _ _) = s
 
 -- |
+--
 -- @toList empty = []@
 empty :: Heap k a
 empty = Empty
 
 -- |
+--
 -- /O(1)/.
 --
 -- > toList (singleton k v) = [(k, v)]
@@ -106,6 +112,7 @@ singleton :: k -> a -> Heap k a
 singleton k v = Heap 1 empty empty k v empty empty
 
 -- |
+--
 -- /O(1)/.
 --
 -- > toList (xs `append` ys) = toList xs ++ toList ys
@@ -122,7 +129,9 @@ xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `append` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
         Empty   -> Heap (sx+sy)        xs                        ls2  k2 v2 rs2 r2
         Heap {} -> Heap (sx+sy) Empty ((xs `append` l2) `append` ls2) k2 v2 rs2 r2
 
--- | /O(m)/, where /m/ is the length of the input list.
+-- |
+--
+-- /O(m)/, where /m/ is the length of the input list.
 --
 -- > toList (appends xss) = concatMap toList xss
 appends :: Ord k => [Heap k a] -> Heap k a
@@ -133,6 +142,7 @@ data HeapMinView k v
   | MinViewH (Heap k v) k v (Heap k v)
 
 -- |
+--
 -- Split the 'Heap' at the leftmost occurrence of the smallest key
 -- contained in the 'Heap'.
 --
@@ -150,6 +160,7 @@ minViewWithKey Empty = EmptyH
 minViewWithKey (Heap _ l ls k v rs r) = MinViewH (l `append` ls) k v (rs `append` r)
 
 -- |
+--
 -- > mempty  = empty
 -- > mappend = append
 instance Ord k => Monoid (Heap k a) where
@@ -157,6 +168,7 @@ instance Ord k => Monoid (Heap k a) where
   mappend = append
 
 -- |
+--
 -- Prepend a key-value pair to the beginning of a 'Heap'.
 --
 -- /O(1)/.
@@ -166,6 +178,7 @@ cons :: Ord k => k -> a -> Heap k a -> Heap k a
 cons k v = (singleton k v <>)
 
 -- |
+--
 -- Append a key-value pair to the end of a 'Heap'.
 --
 -- /O(1)/.
@@ -175,6 +188,7 @@ snoc :: Ord k => Heap k a -> k -> a -> Heap k a
 snoc xs k v = xs <> singleton k v
 
 -- |
+--
 -- > foldrWithKey f z xs = foldr (uncurry f) z (toList xs)
 foldrWithKey :: (k -> a -> b -> b) -> b -> Heap k a -> b
 foldrWithKey f = flip go
@@ -183,6 +197,7 @@ foldrWithKey f = flip go
     go (Heap _ l ls k v rs r) z = go l (go ls (f k v (go rs (go r z))))
 
 -- |
+--
 -- List the key-value pairs in a 'Heap' in sequence order. This is the semantic
 -- function for 'Heap'.
 --
@@ -191,6 +206,7 @@ toList :: Heap k a -> [(k, a)]
 toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 
 -- |
+--
 -- List the key-value pairs in a 'Heap' in key order.
 --
 -- /O(n log n)/ when the spine of the result is evaluated fully.
@@ -203,6 +219,7 @@ toAscList = unfoldr f
         MinViewH l k v r -> Just ((k, v), l <> r)
 
 -- |
+--
 -- Construct a 'Heap' from a list of key-value pairs.
 --
 -- /O(n)/.
@@ -210,6 +227,7 @@ fromList :: Ord k => [(k, a)] -> Heap k a
 fromList = foldl' (\acc (k, v) -> snoc acc k v) empty
 
 -- |
+--
 -- > toList (bimap f g xs) = map (f *** g) (toList xs)
 bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
 bimap f g = go
@@ -218,11 +236,13 @@ bimap f g = go
     go (Heap _ l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
 
 -- |
+--
 -- > toList (mapKeys f xs) = map (first f) (toList xs)
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
 -- |
+--
 -- Map a function over all values in a heap.
 --
 -- /O(1)/ when evaluating to WHNF. /O(n)/ when evaluating to NF.
@@ -233,6 +253,7 @@ mapWithKey f = go
     go (Heap n l ls k v rs r) = Heap n (go l) (go ls) k (f k v) (go rs) (go r)
 
 -- |
+--
 -- Fold the keys and values in the heap using the given monoid, such that
 --
 -- > foldMapWithKey f = fold . mapWithKey f
@@ -245,6 +266,7 @@ foldMapWithKey f = go
     go (Heap _ l ls k v rs r) = go l <> go ls <> f k v <> go rs <> go r
 
 -- |
+--
 -- Behaves exactly like a regular traverse except that the traversing function
 -- also has access to the key associated with a value, such that
 --
@@ -258,6 +280,7 @@ traverseWithKey f = go
     go (Heap n l ls k v rs r) = Heap n <$> go l <*> go ls <*> pure k <*> f k v <*> go rs <*> go r
 
 -- |
+--
 -- Behaves exactly like a regular traverse except that it's over the keys
 -- instead of the values.
 --
@@ -270,6 +293,7 @@ traverseKeys f = go
     (<.>) = liftA2 (<>)
 
 -- |
+--
 -- Works like @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
@@ -283,6 +307,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
     <> (fr  <*>         xs)
 
 -- |
+--
 -- Works like @WriterT k []@
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
@@ -309,16 +334,19 @@ instance Ord k => GHC.Exts.IsList (Heap k a) where
   toList   = toList
 
 -- |
+--
 -- > xs == ys = toList xs == toList ys
 instance (Eq k, Eq a) => Eq (Heap k a) where
   xs == ys = toList xs == toList ys
 
 -- |
+--
 -- > compare xs ys = compare (toList xs) (toList ys)
 instance (Ord k, Ord a) => Ord (Heap k a) where
   compare xs ys = compare (toList xs) (toList ys)
 
 -- |
+--
 -- > empty = mempty
 -- > (<|>) = mappend
 instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
@@ -326,6 +354,7 @@ instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
   (<|>) = mappend
 
 -- |
+--
 -- > mzero = empty
 -- > mplus = append
 instance (Monoid k, Ord k) => MonadPlus (Heap k) where
