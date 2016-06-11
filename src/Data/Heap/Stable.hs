@@ -25,7 +25,8 @@
 -- on 'Heap' assume that arguments are already in WHNF and that the result is to
 -- be evaluated to WHNF.
 module Data.Heap.Stable
-       ( Heap ()
+       ( -- $setup
+         Heap ()
          -- * Query
        , Data.Heap.Stable.null
        , size
@@ -37,8 +38,8 @@ module Data.Heap.Stable
        , cons
        , snoc
          -- * Minimum view
-       , HeapMinView (..)
-       , minViewWithKey
+       , MinView (..)
+       , minView
          -- * Traversal
          -- ** Map
        , bimap
@@ -57,11 +58,15 @@ module Data.Heap.Stable
        , toAscList
        ) where
 
+import Prelude hiding (null)
+
 import qualified Control.Applicative as Applicative
 import Control.Applicative hiding (Alternative (..))
 import Control.Monad
 import Data.List (foldl', unfoldr)
+import qualified Data.List
 import Data.Monoid
+import qualified Data.Foldable
 
 import qualified GHC.Exts
 
@@ -76,11 +81,17 @@ data Heap k a
 
 -- |
 --
--- 'True' if the 'Heap' is empty.
+-- 'True' if the 'Heap' is empty and 'False' otherwise.
 --
 -- /O(1)/.
 --
--- > null xs = Data.List.null (toList xs)
+-- >>> any null [the, quick, brown, fox]
+-- False
+--
+-- >>> null empty
+-- True
+--
+-- prop> null xs == Data.List.null (toList xs)
 null :: Heap k a -> Bool
 null Empty = True
 null Heap {} = False
@@ -91,30 +102,54 @@ null Heap {} = False
 --
 -- /O(1)/.
 --
--- > size xs = length (toList xs)
+-- >>> map size [the, quick, brown, fox]
+-- [3,5,5,3]
+--
+-- >>> size empty
+-- 0
+--
+-- prop> size xs == length (toList xs)
 size :: Heap k a -> Int
 size Empty = 0
 size (Heap s _ _ _ _ _ _) = s
 
 -- |
+-- An empty heap.
 --
--- @toList empty = []@
+-- >>> empty
+-- fromList []
 empty :: Heap k a
 empty = Empty
 
 -- |
 --
+-- Construct a heap containing a single key-value pair.
+--
 -- /O(1)/.
 --
--- > toList (singleton k v) = [(k, v)]
+-- >>> singleton "foo" 42
+-- fromList [("foo",42)]
+--
+-- prop> toList (singleton k v) == [(k, v)]
 singleton :: k -> a -> Heap k a
 singleton k v = Heap 1 empty empty k v empty empty
 
 -- |
 --
+-- Append two heaps, preserving sequential ordering.
+--
 -- /O(1)/.
 --
--- > toList (xs `append` ys) = toList xs ++ toList ys
+-- >>> append empty the
+-- fromList [('t',0),('h',1),('e',2)]
+--
+-- >>> append the empty
+-- fromList [('t',0),('h',1),('e',2)]
+--
+-- >>> append the fox
+-- fromList [('t',0),('h',1),('e',2),('f',0),('o',1),('x',2)]
+--
+-- prop> toList (xs `append` ys) == toList xs ++ toList ys
 append :: Ord k => Heap k a -> Heap k a -> Heap k a
 Empty `append` ys = ys
 xs `append` Empty = xs
@@ -130,37 +165,78 @@ xs@(Heap sx l1 ls1 k1 v1 rs1 r1) `append` ys@(Heap sy l2 ls2 k2 v2 rs2 r2)
 
 -- |
 --
+-- Sequentially append an arbitrary number of heaps.
+--
 -- /O(m)/, where /m/ is the length of the input list.
 --
--- > toList (appends xss) = concatMap toList xss
+-- >>> appends [the, quick, fox]
+-- fromList [('t',0),('h',1),('e',2),('q',0),('u',1),('i',2),('c',3),('k',4),('f',0),('o',1),('x',2)]
+--
+-- prop> toList (appends xss) == concatMap toList xss
 appends :: Ord k => [Heap k a] -> Heap k a
 appends = foldl' append empty
 
-data HeapMinView k v
-  = EmptyH
-  | MinViewH (Heap k v) k v (Heap k v)
+-- |
+--
+-- View of the minimum key of a heap, split out from everything occurring to its
+-- left and to its right in the sequence.
+data MinView k v
+  = EmptyView
+  | MinView (Heap k v) k v (Heap k v)
+  deriving (Eq, Show)
 
 -- |
 --
--- Split the 'Heap' at the leftmost occurrence of the smallest key contained in
--- the 'Heap'.
+-- Split the 'Heap' at the /leftmost/ occurrence of the smallest key contained
+-- in the 'Heap'.
 --
 -- When the 'Heap' is empty, /O(1)/. When the 'Heap' is not empty, finding the
 -- key and value is /O(1)/, and evaluating the remainder of the heap to the left
 -- or right of the key-value pair is amortized /O(log n)/.
 --
--- > toList xs =
--- > case minViewWithKey xs of
--- >   Nothing -> []
--- >   Just (l, kv, r) -> toList l ++ [kv] ++ toList r
-minViewWithKey :: Ord k => Heap k a -> HeapMinView k a
-minViewWithKey Empty = EmptyH
-minViewWithKey (Heap _ l ls k v rs r) = MinViewH (l `append` ls) k v (rs `append` r)
+-- >>> minView empty
+-- EmptyView
+--
+-- >>> minView the
+-- MinView (fromList [('t',0),('h',1)]) 'e' 2 (fromList [])
+--
+-- >>> minView (append the the)
+-- MinView (fromList [('t',0),('h',1)]) 'e' 2 (fromList [('t',0),('h',1),('e',2)])
+--
+-- >>> minView quick
+-- MinView (fromList [('q',0),('u',1),('i',2)]) 'c' 3 (fromList [('k',4)])
+--
+-- >>> minView brown
+-- MinView (fromList []) 'b' 0 (fromList [('r',1),('o',2),('w',3),('n',4)])
+--
+-- >>> minView fox
+-- MinView (fromList []) 'f' 0 (fromList [('o',1),('x',2)])
+--
+-- Here is a model implementation of 'minView':
+--
+-- >>> :{
+-- let { minViewModel xs =
+--         case toList xs of
+--           []        -> EmptyView
+--           keyValues ->
+--             let minKey          = minimum (map fst keyValues)
+--                 (l, (k, v) : r) = break (\(key, _) -> key == minKey) keyValues
+--             in MinView (fromList l) k v (fromList r)
+--     }
+-- :}
+--
+-- The following property looks different from the others in this module due to
+-- working around a limitation of doctest.
+--
+-- >>> quickCheck $ \xs -> minView (xs :: Heap Integer Integer) == minViewModel xs
+-- +++ OK, passed 100 tests.
+minView :: Ord k => Heap k a -> MinView k a
+minView Empty = EmptyView
+minView (Heap _ l ls k v rs r) = MinView (l `append` ls) k v (rs `append` r)
 
 -- |
 --
--- > mempty  = empty
--- > mappend = append
+-- Formed from 'empty' and 'append'
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
   mappend = append
@@ -171,7 +247,10 @@ instance Ord k => Monoid (Heap k a) where
 --
 -- /O(1)/.
 --
--- > toList (cons k v xs) = (k, v) : toList xs
+-- >>> cons 'a' 0 fox
+-- fromList [('a',0),('f',0),('o',1),('x',2)]
+--
+-- prop> toList (cons k v xs) == (k, v) : toList xs
 cons :: Ord k => k -> a -> Heap k a -> Heap k a
 cons k v = (singleton k v <>)
 
@@ -181,13 +260,22 @@ cons k v = (singleton k v <>)
 --
 -- /O(1)/.
 --
--- > toList (snoc xs k v) = toList xs ++ [(k, v)]
+-- >>> snoc fox 'y' 0
+-- fromList [('f',0),('o',1),('x',2),('y',0)]
+--
+-- prop> toList (snoc xs k v) == toList xs ++ [(k, v)]
 snoc :: Ord k => Heap k a -> k -> a -> Heap k a
 snoc xs k v = xs <> singleton k v
 
 -- |
 --
--- > foldrWithKey f z xs = foldr (uncurry f) z (toList xs)
+-- Like 'foldr', but provides access to the key for each value in the folding
+-- function.
+--
+-- >>> foldrWithKey (\k v kvs -> (k, v) : kvs) [] fox
+-- [('f',0),('o',1),('x',2)]
+--
+-- prop> let f k v acc = g `apply` k `apply` v `apply` acc in foldrWithKey f z xs == foldr (uncurry f) z (toList xs)
 foldrWithKey :: (k -> a -> b -> b) -> b -> Heap k a -> b
 foldrWithKey f = flip go
   where
@@ -199,7 +287,25 @@ foldrWithKey f = flip go
 -- List the key-value pairs in a 'Heap' in sequence order. This is the semantic
 -- function for 'Heap'.
 --
+-- >>> toList empty
+-- []
+--
+-- >>> toList the
+-- [('t',0),('h',1),('e',2)]
+--
+-- >>> toList quick
+-- [('q',0),('u',1),('i',2),('c',3),('k',4)]
+--
+-- >>> toList brown
+-- [('b',0),('r',1),('o',2),('w',3),('n',4)]
+--
+-- >>> toList fox
+-- [('f',0),('o',1),('x',2)]
+--
 -- /O(n)/ when the spine of the result is evaluated fully.
+--
+-- prop> toList (fromList xs) == xs
+-- prop> fromList (toList xs) == xs
 toList :: Heap k a -> [(k, a)]
 toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 
@@ -208,25 +314,51 @@ toList = foldrWithKey (\k v xs -> (k, v) : xs) []
 -- List the key-value pairs in a 'Heap' in key order.
 --
 -- /O(n log n)/ when the spine of the result is evaluated fully.
+--
+-- >>> toAscList empty
+-- []
+--
+-- >>> toAscList the
+-- [('e',2),('h',1),('t',0)]
+--
+-- >>> toAscList quick
+-- [('c',3),('i',2),('k',4),('q',0),('u',1)]
+--
+-- >>> toAscList brown
+-- [('b',0),('n',4),('o',2),('r',1),('w',3)]
+--
+-- >>> toAscList fox
+-- [('f',0),('o',1),('x',2)]
+--
+-- prop> toAscList xs == Data.List.sortOn fst (toList xs)
 toAscList :: Ord k => Heap k a -> [(k, a)]
 toAscList = unfoldr f
   where
     f xs =
-      case minViewWithKey xs of
-        EmptyH -> Nothing
-        MinViewH l k v r -> Just ((k, v), l <> r)
+      case minView xs of
+        EmptyView -> Nothing
+        MinView l k v r -> Just ((k, v), l <> r)
 
 -- |
 --
 -- Construct a 'Heap' from a list of key-value pairs.
 --
 -- /O(n)/.
+--
+-- >>> fromList (zip [0..3] [4..])
+-- fromList [(0,4),(1,5),(2,6),(3,7)]
+--
+-- prop> toList (fromList xs) == xs
+-- prop> fromList (toList xs) == xs
 fromList :: Ord k => [(k, a)] -> Heap k a
 fromList = foldl' (\acc (k, v) -> snoc acc k v) empty
 
 -- |
 --
--- > toList (bimap f g xs) = map (f *** g) (toList xs)
+-- >>> bimap succ (*10) fox
+-- fromList [('g',0),('p',10),('y',20)]
+--
+-- prop> toList (bimap (apply f) (apply g) xs) == map (\(k, v) -> (apply f k, apply g v)) (toList xs)
 bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
 bimap f g = go
   where
@@ -235,7 +367,10 @@ bimap f g = go
 
 -- |
 --
--- > toList (mapKeys f xs) = map (first f) (toList xs)
+-- >>> mapKeys succ fox
+-- fromList [('g',0),('p',1),('y',2)]
+--
+-- prop> toList (mapKeys (apply f) xs) == map (\(k, v) -> (apply f k, v)) (toList xs)
 mapKeys :: Ord k2 => (k1 -> k2) -> Heap k1 a -> Heap k2 a
 mapKeys f = bimap f id
 
@@ -244,6 +379,11 @@ mapKeys f = bimap f id
 -- Map a function over all values in a heap.
 --
 -- /O(1)/ when evaluating to WHNF. /O(n)/ when evaluating to NF.
+--
+-- >>> mapWithKey (\k v -> (k,v)) fox
+-- fromList [('f',('f',0)),('o',('o',1)),('x',('x',2))]
+--
+-- prop> let f k v = g `apply` k `apply` v in mapWithKey f xs == fromList (map (\(k, v) -> (k, f k v)) (toList xs))
 mapWithKey :: (k -> a -> b) -> Heap k a -> Heap k b
 mapWithKey f = go
   where
@@ -254,9 +394,12 @@ mapWithKey f = go
 --
 -- Fold the keys and values in the heap using the given monoid, such that
 --
--- > foldMapWithKey f = fold . mapWithKey f
---
 -- /O(n)/.
+--
+-- >>> foldMapWithKey (\k v -> [(k,v)]) fox
+-- [('f',0),('o',1),('x',2)]
+--
+-- prop> let f k v = g `apply` k `apply` v :: [Integer] in foldMapWithKey f xs == Data.Foldable.fold (mapWithKey f xs)
 foldMapWithKey :: Monoid b => (k -> a -> b) -> Heap k a -> b
 foldMapWithKey f = go
   where
@@ -268,9 +411,17 @@ foldMapWithKey f = go
 -- Behaves exactly like a regular traverse except that the traversing function
 -- also has access to the key associated with a value, such that
 --
--- > traverseWithKey f = fromList . traverse ((k, v) -> (,) k $ f k v) . toList
---
 -- /O(n)/.
+--
+-- >>> traverseWithKey (\k v -> print (k, v) >> return (succ k, v)) fox
+-- ('f',0)
+-- ('o',1)
+-- ('x',2)
+-- fromList [('f',('g',0)),('o',('p',1)),('x',('y',2))]
+--
+-- prop> let f k v = g `apply` k `apply` v :: ([Integer], Integer) in traverseWithKey f xs == (fromList <$> traverse (\(k, v) -> (,) k <$> f k v) (toList xs))
+
+-- > traverseWithKey f = fromList . traverse ((k, v) -> (,) k $ f k v) . toList
 traverseWithKey :: Applicative f => (k -> a -> f b) -> Heap k a -> f (Heap k b)
 traverseWithKey f = go
   where
@@ -282,7 +433,15 @@ traverseWithKey f = go
 -- Behaves exactly like a regular traverse except that it's over the keys
 -- instead of the values.
 --
--- /O(n log n)/.
+-- /O(n)/.
+--
+-- >>> traverseKeys (\k -> print k >> return (succ k)) fox
+-- 'f'
+-- 'o'
+-- 'x'
+-- fromList [('g',0),('p',1),('y',2)]
+--
+-- prop> traverseKeys (apply f) xs == (fromList <$> traverse (\(k, v) -> flip (,) v <$> (apply f k :: ([Integer], Integer))) (toList xs))
 traverseKeys :: (Applicative f, Ord k2) => (k1 -> f k2) -> Heap k1 a -> f (Heap k2 a)
 traverseKeys f = go
   where
@@ -292,7 +451,7 @@ traverseKeys f = go
 
 -- |
 --
--- Works like @WriterT k []@
+-- Equivalent to @WriterT k []@
 instance (Monoid k, Ord k) => Applicative (Heap k) where
   pure = singleton mempty
   Empty <*> _ = Empty
@@ -306,7 +465,7 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
 
 -- |
 --
--- Works like @WriterT k []@
+-- Equivalent to @WriterT k []@
 instance (Monoid k, Ord k) => Monad (Heap k) where
   return = pure
   Empty >>= _ = Empty
@@ -333,28 +492,58 @@ instance Ord k => GHC.Exts.IsList (Heap k a) where
 
 -- |
 --
--- > xs == ys = toList xs == toList ys
+-- prop> (xs == ys) == (toList xs == toList ys)
 instance (Eq k, Eq a) => Eq (Heap k a) where
   xs == ys = toList xs == toList ys
 
 -- |
 --
--- > compare xs ys = compare (toList xs) (toList ys)
+-- prop> compare xs ys == compare (toList xs) (toList ys)
 instance (Ord k, Ord a) => Ord (Heap k a) where
   compare xs ys = compare (toList xs) (toList ys)
 
 -- |
 --
--- > empty = mempty
--- > (<|>) = mappend
+-- Formed from 'empty' and 'append'
 instance (Monoid k, Ord k) => Applicative.Alternative (Heap k) where
   empty = mempty
   (<|>) = mappend
 
 -- |
 --
--- > mzero = empty
--- > mplus = append
+-- Formed from 'empty' and 'append'
 instance (Monoid k, Ord k) => MonadPlus (Heap k) where
   mzero = mempty
   mplus = mappend
+
+-- $setup
+--
+-- We use QuickCheck to verify the properties given in this documentation. Here
+-- is the necessary setup code:
+--
+-- >>> import Test.QuickCheck
+-- >>> import Test.QuickCheck.Function
+-- >>> :{
+-- instance (Arbitrary k, Arbitrary v, Ord k) => Arbitrary (Heap k v) where
+--   arbitrary = fromList <$> arbitrary
+--   shrink = map fromList . shrink . toList
+-- :}
+--
+-- Here are some example values used in the documentation for this module:
+--
+-- >>> let the   = fromList (zip "the"   [0..])
+-- >>> let quick = fromList (zip "quick" [0..])
+-- >>> let brown = fromList (zip "brown" [0..])
+-- >>> let fox   = fromList (zip "fox"   [0..])
+--
+-- >>> the
+-- fromList [('t',0),('h',1),('e',2)]
+--
+-- >>> quick
+-- fromList [('q',0),('u',1),('i',2),('c',3),('k',4)]
+--
+-- >>> brown
+-- fromList [('b',0),('r',1),('o',2),('w',3),('n',4)]
+--
+-- >>> fox
+-- fromList [('f',0),('o',1),('x',2)]

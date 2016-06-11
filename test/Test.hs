@@ -34,10 +34,10 @@ tests =
   , testProperty "appends" $
     \(map toHeap -> hs :: [Heap Int Int]) ->
       (Heap.toList . Heap.appends) hs == concatMap Heap.toList hs
-  , testProperty "minViewWithKey" $
+  , testProperty "minView" $
     \(H h :: H Int Int) ->
-      (minViewToSemantics . Heap.minViewWithKey) h
-      == (minViewWithKeySemantics . Heap.toList) h
+      (minViewToSemantics . Heap.minView) h
+      == (minViewSemantics . Heap.toList) h
   , testProperty "cons" $
     \k v (H h :: H Int Int) ->
       (Heap.toList . Heap.cons k v) h == (k, v) : Heap.toList h
@@ -102,13 +102,13 @@ tests =
       Heap.toList (a >>= f) == fromWriterT (toWriterT a >>= toWriterT . f)
   ]
 
-minViewToSemantics :: Heap.HeapMinView k a -> Maybe ([(k, a)], (k, a), [(k, a)])
-minViewToSemantics Heap.EmptyH = Nothing
-minViewToSemantics (Heap.MinViewH l k v r) = Just (Heap.toList l, (k, v), Heap.toList r)
+minViewToSemantics :: Heap.MinView k a -> Maybe ([(k, a)], (k, a), [(k, a)])
+minViewToSemantics Heap.EmptyView = Nothing
+minViewToSemantics (Heap.MinView l k v r) = Just (Heap.toList l, (k, v), Heap.toList r)
 
-minViewWithKeySemantics :: Ord k => [(k, a)] -> Maybe ([(k, a)], (k, a), [(k, a)])
-minViewWithKeySemantics [] = Nothing
-minViewWithKeySemantics kvs = Just (l, kv, r)
+minViewSemantics :: Ord k => [(k, a)] -> Maybe ([(k, a)], (k, a), [(k, a)])
+minViewSemantics [] = Nothing
+minViewSemantics kvs = Just (l, kv, r)
   where
     minKey = (minimum . map fst) kvs
     (l, kv : r) = break ((== minKey) . fst) kvs
