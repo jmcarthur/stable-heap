@@ -68,8 +68,8 @@ import qualified GHC.Exts
 
 -- |
 --
--- Denotationally, @Heap k a@ is equivalent to @[(k, a)]@, but its operations
--- have different efficiencies.
+-- @Heap k a@ is equivalent to @[(k, a)]@, but its operations have different
+-- efficiencies.
 data Heap k a
   = Heap !Int !(Heap k a) (Heap k a) !k a (Heap k a) !(Heap k a)
   | Empty
