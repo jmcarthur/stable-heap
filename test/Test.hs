@@ -14,6 +14,7 @@ import Test.Tasty.QuickCheck
 main :: IO ()
 main = defaultMain tests
 
+-- TODO Many of these tests are now redundant with doctests.
 tests :: TestTree
 tests =
   testGroup "toList"
