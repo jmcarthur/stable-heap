@@ -59,7 +59,7 @@ test-suite test
 benchmark bench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      bench
-  build-depends:       base >=4.7 && <4.9,
+  build-depends:       base >=4.7 && <4.19,
                        criterion >= 1.1,
                        fingertree >= 0.1,
                        heaps >= 0.3,
