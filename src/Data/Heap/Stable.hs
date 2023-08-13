@@ -265,6 +265,11 @@ instance Ord k => Monoid (Heap k a) where
 #else // base < 4.9
   -- prior to GHC 8.0 / base-4.9 where no `Semigroup` class existed
   mappend = append
+
+-- Convenience so that we can locally use (<>) even without Semigroup
+infixr 6 <>
+(<>) :: Ord k => Heap k a -> Heap k a -> Heap k a
+(<>) = append
 #endif
 
 -- |
