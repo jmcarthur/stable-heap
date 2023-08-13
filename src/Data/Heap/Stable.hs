@@ -66,7 +66,8 @@ import Control.Monad
 import Data.List (foldl', unfoldr)
 import qualified Data.List
 import Data.Monoid
-import qualified Data.Foldable
+import Data.Foldable (Foldable)
+import Data.Traversable (Traversable)
 
 import qualified GHC.Exts
 
