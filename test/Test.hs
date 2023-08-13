@@ -2,10 +2,12 @@
 {-# LANGUAGE ViewPatterns #-}
 
 import Control.Arrow
+import Control.Applicative
 import Control.Monad.Trans.Writer
 import Data.Heap.Stable (Heap)
 import qualified Data.Heap.Stable as Heap
 import Data.List
+import Data.Ord
 import Data.Tuple
 import Test.QuickCheck.Function
 import Test.Tasty
@@ -53,7 +55,7 @@ tests =
         Heap.foldrWithKey g z h == foldr (\(k, v) acc -> g k v acc) z (Heap.toList h)
   , testProperty "toAscList" $
     \(H h :: H Int Int) ->
-      Heap.toAscList h == sortOn fst (Heap.toList h)
+      Heap.toAscList h == sortBy (comparing fst) (Heap.toList h)
   , testProperty "fromList" $
     \(kvs :: [(Int, Int)]) ->
       (Heap.toList . Heap.fromList) kvs == kvs
