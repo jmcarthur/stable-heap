@@ -239,10 +239,16 @@ minView (Heap _ l ls k v rs r) = MinView (l `append` ls) k v (rs `append` r)
 
 -- |
 --
+-- Formed from 'append'
+instance Ord k => Semigroup (Heap k a) where
+  (<>) = append
+
+-- |
+--
 -- Formed from 'empty' and 'append'
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
-  mappend = append
+  mappend = mappend
 
 -- |
 --
