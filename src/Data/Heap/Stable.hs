@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
@@ -65,10 +69,19 @@ import Control.Applicative hiding (Alternative (..))
 import Control.Monad
 import Data.List (foldl', unfoldr)
 import qualified Data.List
-import Data.Monoid
-import qualified Data.Foldable
+import Data.Foldable (Foldable)
+import Data.Traversable (Traversable)
 
 import qualified GHC.Exts
+
+#if MIN_VERSION_base(4,9,0)
+-- Data.Semigroup was added in base-4.9
+import Data.Semigroup as Sem
+#endif
+#if !(MIN_VERSION_base(4,8,0))
+-- starting with base-4.8, Monoid is rexported from Prelude
+import Data.Monoid
+#endif
 
 -- |
 --
@@ -234,12 +247,26 @@ minView :: Ord k => Heap k a -> MinView k a
 minView Empty = EmptyView
 minView (Heap _ l ls k v rs r) = MinView (l `append` ls) k v (rs `append` r)
 
+#if MIN_VERSION_base(4,9,0)
+instance Ord k => Sem.Semigroup (Heap k a) where
+  (<>) = append
+#endif
+
 -- |
 --
 -- Formed from 'empty' and 'append'
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
+
+#if MIN_VERSION_base(4,11,0)
+  -- starting with base-4.11, mappend definitions are redundant;
+  -- at some point `mappend` will be removed from `Monoid`
+#elif MIN_VERSION_base(4,9,0)
+  mappend = (Sem.<>)
+#else
+  -- prior to GHC 8.0 / base-4.9 where no `Semigroup` class existed
   mappend = append
+#endif
 
 -- |
 --
@@ -252,7 +279,7 @@ instance Ord k => Monoid (Heap k a) where
 --
 -- prop> toList (cons k v xs) == (k, v) : toList xs
 cons :: Ord k => k -> a -> Heap k a -> Heap k a
-cons k v = (singleton k v <>)
+cons k v = (singleton k v `append`)
 
 -- |
 --
@@ -265,7 +292,7 @@ cons k v = (singleton k v <>)
 --
 -- prop> toList (snoc xs k v) == toList xs ++ [(k, v)]
 snoc :: Ord k => Heap k a -> k -> a -> Heap k a
-snoc xs k v = xs <> singleton k v
+snoc xs k v = xs `append` singleton k v
 
 -- |
 --
@@ -337,7 +364,7 @@ toAscList = unfoldr f
     f xs =
       case minView xs of
         EmptyView -> Nothing
-        MinView l k v r -> Just ((k, v), l <> r)
+        MinView l k v r -> Just ((k, v), l `append` r)
 
 -- |
 --
@@ -363,7 +390,8 @@ bimap :: Ord k2 => (k1 -> k2) -> (a -> b) -> Heap k1 a -> Heap k2 b
 bimap f g = go
   where
     go Empty = Empty
-    go (Heap _ l ls k v rs r) = go l <> go ls <> singleton (f k) (g v) <> go rs <> go r
+    go (Heap _ l ls k v rs r) =
+      go l `append` go ls `append` singleton (f k) (g v) `append` go rs `append` go r
 
 -- |
 --
@@ -404,7 +432,8 @@ foldMapWithKey :: Monoid b => (k -> a -> b) -> Heap k a -> b
 foldMapWithKey f = go
   where
     go Empty = mempty
-    go (Heap _ l ls k v rs r) = go l <> go ls <> f k v <> go rs <> go r
+    go (Heap _ l ls k v rs r) =
+      go l `mappend` go ls `mappend` f k v `mappend` go rs `mappend` go r
 
 -- |
 --
@@ -447,7 +476,7 @@ traverseKeys f = go
   where
     go Empty = pure Empty
     go (Heap _ l ls k v rs r) = go l <.> go ls <.> ((`singleton` v) <$> f k) <.> go rs <.> go r
-    (<.>) = liftA2 (<>)
+    (<.>) = liftA2 append
 
 -- |
 --
@@ -458,10 +487,10 @@ instance (Monoid k, Ord k) => Applicative (Heap k) where
   _ <*> Empty = Empty
   Heap _ fl fls fk f frs fr <*> xs
     =  (fl  <*>         xs)
-    <> (fls <*>         xs)
-    <>  bimap (fk <>) f xs
-    <> (frs <*>         xs)
-    <> (fr  <*>         xs)
+    `append` (fls <*> xs)
+    `append` bimap (fk `mappend`) f xs
+    `append` (frs <*> xs)
+    `append` (fr  <*> xs)
 
 -- |
 --
@@ -471,10 +500,10 @@ instance (Monoid k, Ord k) => Monad (Heap k) where
   Empty >>= _ = Empty
   Heap _ xl xls xk x xrs xr >>= f
     =  (xl  >>= f)
-    <> (xls >>= f)
-    <>  mapKeys (xk <>) (f x)
-    <> (xrs >>= f)
-    <> (xr  >>= f)
+    `append` (xls >>= f)
+    `append` mapKeys (xk `mappend`) (f x)
+    `append` (xrs >>= f)
+    `append` (xr  >>= f)
 
 instance (Show k, Show a) => Show (Heap k a) where
   showsPrec d h = showParen (d > 10) $ showString "fromList " . shows (toList h)

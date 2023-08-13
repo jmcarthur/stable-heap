@@ -1,5 +1,5 @@
 name:                stable-heap
-version:             0.2.0.0
+version:             0.2.1.0
 synopsis:            Purely functional stable heaps (fair priority queues)
 description:
         This library provides a purely functional implementation of
@@ -22,14 +22,25 @@ category:            Data Structures
 build-type:          Simple
 cabal-version:       >=1.10
 stability:           experimental
+tested-with:         GHC ==7.8.4,
+                     GHC ==7.10.3,
+                     GHC ==8.0.2,
+                     GHC ==8.2.2,
+                     GHC ==8.4.4,
+                     GHC ==8.6.5,
+                     GHC ==8.8.4,
+                     GHC ==8.10.7,
+                     GHC ==9.0.2,
+                     GHC ==9.2.7,
+                     GHC ==9.4.4,
+                     GHC ==9.6.1
 
 library
   exposed-modules:     Data.Heap.Stable
-  build-depends:       base >=4.7 && <4.9
+  build-depends:       base >=4.7 && <4.19
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-extensions:    DeriveTraversable, Trustworthy, TypeFamilies
-  ghc-options:         -O2
 
 test-suite test
   type:                exitcode-stdio-1.0
@@ -42,23 +53,11 @@ test-suite test
                        transformers
   main-is:             Test.hs
   default-language:    Haskell2010
-  ghc-options:         -O2
-
-test-suite doctest
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      doctest
-  main-is:             Main.hs
-  build-depends:       base,
-                       stable-heap,
-                       Glob,
-                       doctest
-  default-language:    Haskell2010
-  ghc-options:         -O2
 
 benchmark bench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      bench
-  build-depends:       base >=4.8 && <4.9,
+  build-depends:       base >=4.7 && <4.19,
                        criterion >= 1.1,
                        fingertree >= 0.1,
                        heaps >= 0.3,
@@ -68,13 +67,12 @@ benchmark bench
                        vector >= 0.10
   main-is:             Bench.hs
   default-language:    Haskell2010
-  ghc-options:         -O2
 
 source-repository head
-  type:     darcs
-  location: http://hub.darcs.net/jmcarthur/stable-heap
+  type:     git
+  location: https://github.com/jmcarthur/stable-heap.git
 
 source-repository this
-  type:     darcs
-  location: http://hub.darcs.net/jmcarthur/stable-heap
-  tag:      v0.2.0.0
+  type:     git
+  location: https://github.com/jmcarthur/stable-heap.git
+  tag:      v0.2.1.0
