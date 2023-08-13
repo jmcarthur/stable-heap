@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -67,11 +68,19 @@ import Control.Applicative hiding (Alternative (..))
 import Control.Monad
 import Data.List (foldl', unfoldr)
 import qualified Data.List
-import Data.Monoid
 import Data.Foldable (Foldable)
 import Data.Traversable (Traversable)
 
 import qualified GHC.Exts
+
+#if MIN_VERSION_base(4,9,0)
+-- Data.Semigroup was added in base-4.9
+import Data.Semigroup as Sem
+#endif
+#if !(MIN_VERSION_base(4,8,0))
+-- starting with base-4.8, Monoid is rexported from Prelude
+import Data.Monoid
+#endif
 
 -- |
 --
@@ -237,18 +246,26 @@ minView :: Ord k => Heap k a -> MinView k a
 minView Empty = EmptyView
 minView (Heap _ l ls k v rs r) = MinView (l `append` ls) k v (rs `append` r)
 
--- |
---
--- Formed from 'append'
-instance Ord k => Semigroup (Heap k a) where
+#if MIN_VERSION_base(4,9,0)
+instance Ord k => Sem.Semigroup (Heap k a) where
   (<>) = append
+#endif
 
 -- |
 --
 -- Formed from 'empty' and 'append'
 instance Ord k => Monoid (Heap k a) where
   mempty = empty
-  mappend = mappend
+
+#if MIN_VERSION_base(4,11,0)
+  -- starting with base-4.11, mappend definitions are redundant;
+  -- at some point `mappend` will be removed from `Monoid`
+#elif MIN_VERSION_base(4,9,0)
+  mappend = (Sem.<>)
+#else // base < 4.9
+  -- prior to GHC 8.0 / base-4.9 where no `Semigroup` class existed
+  mappend = append
+#endif
 
 -- |
 --
