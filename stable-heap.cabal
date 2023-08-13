@@ -1,5 +1,5 @@
 name:                stable-heap
-version:             0.2.0.0
+version:             0.2.1.0
 synopsis:            Purely functional stable heaps (fair priority queues)
 description:
         This library provides a purely functional implementation of
@@ -69,10 +69,10 @@ benchmark bench
   default-language:    Haskell2010
 
 source-repository head
-  type:     darcs
-  location: http://hub.darcs.net/jmcarthur/stable-heap
+  type:     git
+  location: https://github.com/jmcarthur/stable-heap.git
 
 source-repository this
-  type:     darcs
-  location: http://hub.darcs.net/jmcarthur/stable-heap
-  tag:      v0.2.0.0
+  type:     git
+  location: https://github.com/jmcarthur/stable-heap.git
+  tag:      v0.2.1.0
