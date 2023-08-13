@@ -22,6 +22,8 @@ category:            Data Structures
 build-type:          Simple
 cabal-version:       >=1.10
 stability:           experimental
+tested-with:         GHC ==7.8.4,
+                     GHC ==7.10.3
 
 library
   exposed-modules:     Data.Heap.Stable
