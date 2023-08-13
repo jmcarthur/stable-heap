@@ -262,7 +262,7 @@ instance Ord k => Monoid (Heap k a) where
   -- at some point `mappend` will be removed from `Monoid`
 #elif MIN_VERSION_base(4,9,0)
   mappend = (Sem.<>)
-#else // base < 4.9
+#else
   -- prior to GHC 8.0 / base-4.9 where no `Semigroup` class existed
   mappend = append
 
