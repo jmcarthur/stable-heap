@@ -6,10 +6,10 @@ import Control.Applicative
 import Control.Monad.Trans.Writer
 import Data.Heap.Stable (Heap)
 import qualified Data.Heap.Stable as Heap
-import Data.Foldable
+import Data.Foldable (foldMap)
 import Data.List
 import Data.Ord
-import Data.Traversable
+import Data.Traversable (traverse)
 import Data.Tuple
 import Test.QuickCheck.Function
 import Test.Tasty
