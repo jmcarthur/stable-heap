@@ -37,7 +37,7 @@ tests =
     \(H a :: H Int Int) (H b) ->
       Heap.toList (Heap.append a b) == Heap.toList a ++ Heap.toList b
   , testProperty "appends" $
-    \(map toHeap -> hs :: [Heap Int Int]) ->
+    \(map toHeap -> (hs :: [Heap Int Int])) ->
       (Heap.toList . Heap.appends) hs == concatMap Heap.toList hs
   , testProperty "minView" $
     \(H h :: H Int Int) ->
@@ -103,7 +103,7 @@ tests =
     \(H (fmap apply -> a) :: H [Int] (Fun Int Int)) (H b :: H [Int] Int) ->
       Heap.toList (a <*> b) == fromWriterT (toWriterT a <*> toWriterT b)
   , testProperty "(>>=)" $
-    \(H a :: H [Int] Int) (fmap toHeap . apply -> f :: Int -> Heap [Int] Int) ->
+    \(H a :: H [Int] Int) (fmap toHeap . apply -> (f :: Int -> Heap [Int] Int)) ->
       Heap.toList (a >>= f) == fromWriterT (toWriterT a >>= toWriterT . f)
   ]
 
