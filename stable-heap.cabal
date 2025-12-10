@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                stable-heap
-version:             0.2.1.0
+version:             0.3.0.0
 synopsis:            Purely functional stable heaps (fair priority queues)
 description:
         This library provides a purely functional implementation of
@@ -66,4 +66,4 @@ source-repository head
 source-repository this
   type:     git
   location: https://github.com/jmcarthur/stable-heap.git
-  tag:      v0.2.1.0
+  tag:      v0.3.0.0
